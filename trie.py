@@ -13,12 +13,11 @@ class Node:
 
     def set_leaf(self, char):
         self.leaves[ord(char) - ord("a")] = Node()
-        pass
 
     def find_word(self):
         if self.complete:
             return ""
-        else return
+        else: return
 
 
 class Trie:
@@ -34,14 +33,14 @@ class Trie:
                 curr = curr.get_leaf(letter)
             curr.complete = True
 
-    def traverse(self, count):
-        result = []
+    def traverse(self, curr=self.root, count=3, result=[]):
+        if len(result) == count: return
         # start at root
         curr = self.root
         # while len(result) < count
-        # can implement lazy loading in future
         # go down trie until
         # use stack to save non none leaves to traverse down for more words
+        return result
 
 
     def predict(self, char, count=3):
