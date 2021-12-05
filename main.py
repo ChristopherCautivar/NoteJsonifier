@@ -2,6 +2,7 @@ import json
 import tkinter as tk
 from tkcalendar import Calendar
 from trie import Trie
+from datetime import datetime
 
 
 class Application(tk.Frame):
@@ -57,15 +58,22 @@ class Application(tk.Frame):
         # if it doesn't exist, create then do append functionality
         # if it exists, append.
         file = open("data/" + self.file_name.get() + ".txt", "a")
-        s = "{title:"
-        s += ",completed:"
-        s += ",description:"
-        s += ",tags:"
-        s += ",weight:"
-        s += ",prerequisites:"
-        s += ",time_estimate:"
-        s += ",due_date:}"
+        s = "{title:" + self.title.get()
+        s += ",completed:" + self.completed.get()
+        s += ",description:" + self.description.get(1.0, "end-1c")
+        s += ",tags:" + self.tags.get()
+        s += ",weight:" + str(self.weight.get())
+        s += ",prerequisites:" + self.prerequisites.get()
+        s += ",time_estimate:" + self.time_estimate.get()
+        # TODO: handle for calendar not being visible and converting from datetime to readable and back
+        s += ",due_date:"
+        s += "unknown"
+        s += "}"
         file.write(s)
+        # TODO: toast success
+        # Clear fields
+        self.clear()
+
 
     def clear(self):
         # clears all fields and resets calendar widget
@@ -78,7 +86,6 @@ class Application(tk.Frame):
         self.time_estimate.delete(0, tk.END)
         self.calendar.grid_remove()
         self.due_date.grid(row=8, column=1, padx=5)
-        pass
 
     def create_widgets(self):
         # unstored widget label setup
@@ -105,7 +112,7 @@ class Application(tk.Frame):
 
         # button layouts
         submit_button = tk.Button(self, text="Submit", command=self.submit)
-        submit_button.bind("<Return>", lambda: self.submit())
+        submit_button.bind("<Return>", lambda x: self.submit())
         clear_button = tk.Button(self, text="Clear", command=self.clear)
         clear_button.bind("<Return>", lambda x: self.clear())
         submit_button.grid(row=9, column=0, padx=5, pady=5)

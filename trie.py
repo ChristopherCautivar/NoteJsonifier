@@ -17,7 +17,8 @@ class Node:
     def find_word(self):
         if self.complete:
             return ""
-        else: return
+        else:
+            return
 
 
 class Trie:
@@ -33,8 +34,9 @@ class Trie:
                 curr = curr.get_leaf(letter)
             curr.complete = True
 
-    def traverse(self, curr=self.root, count=3, result=[]):
-        if len(result) == count: return
+    def traverse(self, count=3, result=[]):
+        if len(result) == count:
+            return
         # start at root
         curr = self.root
         # while len(result) < count
