@@ -74,7 +74,6 @@ class Application(tk.Frame):
         # Clear fields
         self.clear()
 
-
     def clear(self):
         # clears all fields and resets calendar widget
         self.title.delete(0, tk.END)
@@ -119,10 +118,8 @@ class Application(tk.Frame):
         clear_button.grid(row=9, column=1, padx=5, pady=5)
 
 
-t = Trie(["test", "asdf"])
-res = []
-t.traverse()
-print(res)
+t = Trie(["a", "ab", "abb", "abc", "ac", "ba"])
+print(t.find_word(t.root))
 root = tk.Tk()
 root.title("NoteJsonifier")
 app = Application(master=root)

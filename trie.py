@@ -14,12 +14,6 @@ class Node:
     def set_leaf(self, char):
         self.leaves[ord(char) - ord("a")] = Node()
 
-    def find_word(self):
-        if self.complete:
-            return ""
-        else:
-            return
-
 
 class Trie:
     # contains the root of the trie and also ensures all requests are lowercase
@@ -30,20 +24,18 @@ class Trie:
             word.lower()
             curr = self.root
             for letter in word:
-                curr.set_leaf(letter)
+                if not curr.get_leaf(letter):
+                    curr.set_leaf(letter)
                 curr = curr.get_leaf(letter)
             curr.complete = True
 
-    def traverse(self, count=3, result=[]):
-        if len(result) == count:
-            return
-        # start at root
-        curr = self.root
-        # while len(result) < count
-        # go down trie until
-        # use stack to save non none leaves to traverse down for more words
+    def find_word(self, node, word="", result=[]):
+        if node.complete:
+            result.append(word)
+        for i in range(len(node.leaves)):
+            if node.leaves[i]:
+                result = self.find_word(node.leaves[i], word + chr(i+ord("a")), result)
         return result
-
 
     def predict(self, char, count=3):
         # gives a list of non-None children to the next count letters
