@@ -120,6 +120,10 @@ class Application(tk.Frame):
 
 t = Trie(["a", "ab", "abb", "abc", "ac", "ba"])
 print(t.find_word(t.root))
+print(t.find_suggestions("ab"))
+print(t.find_word(t.root))
+print(t.find_suggestions("bac"))
+print(t.find_suggestions("b"))
 root = tk.Tk()
 root.title("NoteJsonifier")
 app = Application(master=root)

@@ -29,7 +29,13 @@ class Trie:
                 curr = curr.get_leaf(letter)
             curr.complete = True
 
-    def find_word(self, node, word="", result=[]):
+    def find_word(self, node, word=None, result=None):
+        # fix local-scope reuse of parameters.
+        if not result:
+            result = []
+        if not word:
+            word = ""
+        # if complete word, add word to result
         if node.complete:
             result.append(word)
         for i in range(len(node.leaves)):
@@ -37,7 +43,9 @@ class Trie:
                 result = self.find_word(node.leaves[i], word + chr(i+ord("a")), result)
         return result
 
-    def predict(self, char, count=3):
-        # gives a list of non-None children to the next count letters
-        # TODO: this is probably where all the suggestion and returning stuff should happen
-        pass
+    def find_suggestions(self, prefix):
+        node = self.root
+        for c in prefix:
+            node = node.get_leaf(c)
+        if node:
+            return self.find_word(node, prefix)
