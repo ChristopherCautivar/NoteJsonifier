@@ -29,6 +29,7 @@ class Application(tk.Frame):
         self.calendar = Calendar(self, selectmode="day", date_patter="m/d/y")
         self.create_widgets()
 
+    # from tutorial on using tkinter
     # def create_widgets(self):
     #     self.hi_there = tk.Button(self)
     #     self.hi_there["text"] = "Hello World\n(click me)"
@@ -54,25 +55,41 @@ class Application(tk.Frame):
         self.calendar.grid(row=gi["row"], column=gi["column"], padx=gi["padx"])
 
     def submit(self):
-        # writes to the file name provided
-        # if it doesn't exist, create then do append functionality
-        # if it exists, append.
-        file = open("data/" + self.file_name.get() + ".txt", "a")
-        s = "{title:" + self.title.get()
-        s += ",completed:" + self.completed.get()
-        s += ",description:" + self.description.get(1.0, "end-1c")
-        s += ",tags:" + self.tags.get()
-        s += ",weight:" + str(self.weight.get())
-        s += ",prerequisites:" + self.prerequisites.get()
-        s += ",time_estimate:" + self.time_estimate.get()
-        # TODO: handle for calendar not being visible and converting from datetime to readable and back
-        s += ",due_date:"
-        s += "unknown"
-        s += "}"
-        file.write(s)
-        # TODO: toast success
-        # Clear fields
-        self.clear()
+        # a+ mode forces append regardless of any seek() operations. b modes allow negative indexing, but
+        # do not allow json dumps easily, complicating in-place insertion of new json objects within.
+        # r+ throws errors when the file does not exist.
+        # therefore, the most robust solution while avoiding try exception handling would be to "touch"
+        # the proposed file with a+ mode, then proceed with r+ to read/prepare the data before overwriting it
+
+        # "touch" json file
+        open("data/" + self.file_name.get() + ".json", "a+").close()
+        # open json file and check if empty
+        with open("data/" + self.file_name.get() + ".json", "r+") as json_file:
+            if json_file.read(1):
+                # successfully read truthy character
+                json_file.seek(0)
+                data = json.load(json_file)
+            else:
+                # read falsey character, such as an empty file
+                json_file.seek(0)
+                data = {"todos": []}
+            data["todos"].append({
+                "title": self.title.get(),
+                "completed": self.completed.get(),
+                "description": self.description.get(1.0, "end-1c"),
+                "tags": self.tags.get(),
+                "weight": self.weight.get(),
+                "prerequisites": self.prerequisites.get(),
+                "time_estimate": self.time_estimate.get(),
+                # TODO: handle for calendar not being visible and converting from datetime to readable and back
+                "due_date": "unknown"
+            })
+            # seek to start, overwrite data
+            json_file.seek(0)
+            json.dump(data, json_file)
+            # TODO: toast success
+            # clear fields
+            self.clear()
 
     def clear(self):
         # clears all fields and resets calendar widget
