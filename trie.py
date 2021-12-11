@@ -21,16 +21,12 @@ class Trie:
         # takes a collection of words and creates a trie of them
         self.root = Node()
         for word in words:
-            word.lower()
-            curr = self.root
-            for letter in word:
-                if not curr.get_leaf(letter):
-                    curr.set_leaf(letter)
-                curr = curr.get_leaf(letter)
-            curr.complete = True
+            self.add_word(word)
 
-    def find_word(self, node, word=None, result=None):
+    def find_words(self, node=None, word=None, result=None):
         # fix local-scope reuse of parameters.
+        if not node:
+            node = self.root
         if not result:
             result = []
         if not word:
@@ -40,12 +36,23 @@ class Trie:
             result.append(word)
         for i in range(len(node.leaves)):
             if node.leaves[i]:
-                result = self.find_word(node.leaves[i], word + chr(i+ord("a")), result)
+                result = self.find_words(node.leaves[i], word + chr(i+ord("a")), result)
         return result
 
     def find_suggestions(self, prefix):
         node = self.root
         for c in prefix:
+            if not node:
+                return []
             node = node.get_leaf(c)
         if node:
-            return self.find_word(node, prefix)
+            return self.find_words(node, prefix)
+
+    def add_word(self, word):
+        word.lower()
+        curr = self.root
+        for letter in word:
+            if not curr.get_leaf(letter):
+                curr.set_leaf(letter)
+            curr = curr.get_leaf(letter)
+        curr.complete = True

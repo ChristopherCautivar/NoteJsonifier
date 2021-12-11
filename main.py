@@ -10,6 +10,17 @@ class Application(tk.Frame):
         super().__init__(master)
         self.master = master
         self.pack()
+        # load internal suggestion trie
+        open("data/tags.json", "a+").close()
+        with open("data/tags.json", "r+") as json_file:
+            if json_file.read(1):
+                json_file.seek(0)
+                self.trie = Trie(json.load(json_file)["tags"])
+            else:
+                json_file.seek(0)
+                json.dump({"tags": []}, json_file)
+                self.trie = Trie([])
+        # self.trie = Trie(["a", "ab", "abb", "abc", "ac", "ba", "bag", "cat", "batter", "bat"])
         # stored (via variable) widget
         self.file_name = tk.Entry(self)
         self.title = tk.Entry(self)
@@ -20,7 +31,10 @@ class Application(tk.Frame):
         self.description.bind("<Tab>", self.tab_next_widget)
         # change font
         self.description.configure(font=tk.font.Font(family="Helvetica", size=8))
-        self.tags = tk.Entry(self)
+        self.tags = tk.ttk.Combobox(self, values=self.trie.find_words())
+        self.current_tags = set()
+        self.tags.bind("<KeyRelease>", lambda x: self.auto_suggest(x))
+        self.tags.bind("<KeyPress>", lambda x: self.validate_tag(x))
         self.weight = tk.Scale(self, from_=0, to=10, orient=tk.HORIZONTAL, takefocus=1)
         self.prerequisites = tk.Entry(self)
         self.time_estimate = tk.Entry(self)
@@ -28,6 +42,42 @@ class Application(tk.Frame):
         self.due_date.bind("<Return>", lambda x: self.replace_calendar())
         self.calendar = Calendar(self, selectmode="day", date_patter="m/d/y")
         self.create_widgets()
+        self.master.protocol("WM_DELETE_WINDOW", self.cleanup)
+
+    def auto_suggest(self, x):
+        print(x)
+        # get all characters in combobox
+        input = self.tags.get()
+        input = input.lower().strip()
+        if x.char == "\r":
+            # finalize tag, clearing the field, storing the input, and updating the trie
+            self.tags.selection_clear()
+            self.tags.delete(0, tk.END)
+            self.current_tags.add(input)
+            self.trie.add_word(input)
+            return
+        # only run for character keys
+        if not x.char or not x.char.isalpha():
+            return
+        # get current cursor position
+        pos = self.tags.index(tk.INSERT)
+        # search trie based on current characters
+        matches = self.trie.find_suggestions(input)
+        if matches:
+            # clear all of input
+            self.tags.delete(0, tk.END)
+            # autofill the first one
+            self.tags.set(matches[0])
+            # skip ahead to typed characters and highlight the suggested ones to be overwritten
+            self.tags.selection_range(pos, tk.END)
+            self.tags.icursor(pos)
+        # populate the combobox with all of the results
+        self.tags["values"] = matches
+
+    def validate_tag(self, x):
+        # intercept any non alpha input that is not backspace
+        if not x.keysym == "BackSpace" and (not x.char or not x.char.isalpha()):
+            return "break"
 
     # from tutorial on using tkinter
     # def create_widgets(self):
@@ -71,13 +121,12 @@ class Application(tk.Frame):
                 data = json.load(json_file)
             else:
                 # read falsey character, such as an empty file
-                json_file.seek(0)
                 data = {"todos": []}
             data["todos"].append({
                 "title": self.title.get(),
                 "completed": self.completed.get(),
                 "description": self.description.get(1.0, "end-1c"),
-                "tags": self.tags.get(),
+                "tags": list(self.current_tags),
                 "weight": self.weight.get(),
                 "prerequisites": self.prerequisites.get(),
                 "time_estimate": self.time_estimate.get(),
@@ -102,6 +151,7 @@ class Application(tk.Frame):
         self.time_estimate.delete(0, tk.END)
         self.calendar.grid_remove()
         self.due_date.grid(row=8, column=1, padx=5)
+        self.current_tags.clear()
 
     def create_widgets(self):
         # unstored widget label setup
@@ -134,13 +184,14 @@ class Application(tk.Frame):
         submit_button.grid(row=9, column=0, padx=5, pady=5)
         clear_button.grid(row=9, column=1, padx=5, pady=5)
 
+    def cleanup(self):
+        if self.title.get():
+            self.submit()
+        with open("data/tags.json", "w") as json_file:
+            json.dump({"tags": self.trie.find_words()}, json_file)
+        self.master.destroy()
 
-t = Trie(["a", "ab", "abb", "abc", "ac", "ba"])
-print(t.find_word(t.root))
-print(t.find_suggestions("ab"))
-print(t.find_word(t.root))
-print(t.find_suggestions("bac"))
-print(t.find_suggestions("b"))
+
 root = tk.Tk()
 root.title("NoteJsonifier")
 app = Application(master=root)
