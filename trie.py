@@ -4,7 +4,7 @@ from collections import deque
 class Node:
     def __init__(self):
         # a trie is a data structure of nodes
-        self.leaves = [None] * (ord("z") - ord("a"))
+        self.leaves = [None] * (ord("z") - ord("a") + 1)
         self.complete = False
         pass
 

@@ -6,7 +6,8 @@ as a json file.
 * Prompts for notes with the same fields as the Todo object from SimpleTodoWebapp.
 
 ### Stretch Features
-* 
+* Implementing IntVar() for cleaner binding.
+* Handle backspaces to control display all values in trie
 
 ## Timeline
 Project should take in total 1 week maximum to reach MVP status using given python knowledge and experience.
