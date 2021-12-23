@@ -9,7 +9,7 @@ class Application(tk.Frame):
     def __init__(self, master=None):
         super().__init__(master)
         self.master = master
-        self.grid()
+        self.pack()
         # load internal suggestion trie
         open("data/tags.json", "a+").close()
         with open("data/tags.json", "r+") as json_file:
