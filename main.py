@@ -33,11 +33,11 @@ class Application(tk.Frame):
         self.description.bind("<Tab>", self.tab_next_widget)
         # change font
         self.description.configure(font=tk.font.Font(family="Helvetica", size=8))
-        self.tags = tk.ttk.Combobox(self, values=self.trie.find_words())
+        self.tags = tk.ttk.Combobox(self, values=self.trie.find_words(), validate="all",
+                                    validatecommand=(self.register(self.validate_tag), "%P"))
         self.current_tags = set()
         self.previous_tags = tk.Label(self, wraplength=125)
         self.tags.bind("<KeyRelease>", lambda x: self.auto_suggest(x))
-        self.tags.bind("<KeyPress>", lambda x: self.validate_tag(x))
         self.weight = tk.Scale(self, from_=0, to=10, orient=tk.HORIZONTAL, takefocus=1)
         self.t_prereq = tk.IntVar()
         self.prerequisites = tk.Checkbutton(self, variable=self.t_prereq)
@@ -71,18 +71,18 @@ class Application(tk.Frame):
 
         # layout
         self.file_name.grid(row=0, column=1, pady=10, padx=5)
-        self.title.grid(row=1, column=1, padx=5)
-        self.completed.grid(row=2, column=1, padx=5)
-        self.description.grid(row=3, column=1, padx=5)
-        self.tags.grid(row=4, column=1, padx=5)
+        self.title.grid(row=1, column=1, pady=5, padx=5)
+        self.completed.grid(row=2, column=1, pady=5, padx=5)
+        self.description.grid(row=3, column=1, pady=5, padx=5)
+        self.tags.grid(row=4, column=1, pady=5, padx=5)
         self.previous_tags.grid(row=5, column=1, padx=5)
-        self.weight.grid(row=6, column=1, padx=5)
-        self.prerequisites.grid(row=7, column=1, padx=5)
-        self.t_frame.grid(row=8, column=1)
+        self.weight.grid(row=6, column=1, pady=5, padx=5)
+        self.prerequisites.grid(row=7, column=1, pady=5, padx=5)
+        self.t_frame.grid(row=8, column=1, pady=5)
         self.hours.grid(row=1, column=1)
         self.minutes.grid(row=1, column=3)
-        self.due_date.grid(row=9, column=1, padx=5)
-        self.calendar.grid(row=9, column=1, padx=5)
+        self.due_date.grid(row=9, column=1, pady=5, padx=5)
+        self.calendar.grid(row=9, column=1, pady=5, padx=5)
         self.calendar.grid_remove()
 
         # button layouts
@@ -93,27 +93,27 @@ class Application(tk.Frame):
         submit_button.grid(row=10, column=0, padx=5, pady=5)
         clear_button.grid(row=10, column=1, padx=5, pady=5)
 
+    def add_tag(self, entry):
+        # finalize tag, clearing the field, storing the entry, and updating the trie
+        self.tags.selection_clear()
+        self.tags.delete(0, tk.END)
+        self.current_tags.add(entry)
+        self.trie.add_word(entry)
+        self.previous_tags["text"] = self.current_tags
+
     def auto_suggest(self, x):
         # get all characters in combobox
-        input = self.tags.get()
-        input = input.lower().strip()
+        entry = self.tags.get()
+        entry = entry.lower().strip()
         if x.char == "\r":
-            # finalize tag, clearing the field, storing the input, and updating the trie
-            self.tags.selection_clear()
-            self.tags.delete(0, tk.END)
-            self.current_tags.add(input)
-            self.trie.add_word(input)
-            self.previous_tags["text"] = self.current_tags
-            return
-        # only run for character keys
-        if not x.char or not x.char.isalpha():
+            self.add_tag(entry)
             return
         # get current cursor position
         pos = self.tags.index(tk.INSERT)
         # search trie based on current characters
-        matches = self.trie.find_suggestions(input)
-        if matches:
-            # clear all of input
+        matches = self.trie.find_suggestions(entry)
+        if matches and not x.keysym == "BackSpace":
+            # clear all of entry
             self.tags.delete(0, tk.END)
             # autofill the first one
             self.tags.set(matches[0])
@@ -123,10 +123,12 @@ class Application(tk.Frame):
         # populate the combobox with all of the results
         self.tags["values"] = matches
 
-    def validate_tag(self, x):
-        # intercept any non alpha input that is not backspace or tab
-        if not x.keysym == "Tab" and not x.keysym == "BackSpace" and (not x.char or not x.char.isalpha()):
-            return "break"
+    def validate_tag(self, pval):
+        # intercept any non alpha entry that is not backspace or tab
+        if str.isalpha(pval) or pval == "":
+            return True
+        else:
+            return False
 
     def tab_next_widget(self, event):
         # intercepts the tab key press to always go to the next widget
@@ -163,6 +165,8 @@ class Application(tk.Frame):
             else:
                 # read falsey character, such as an empty file
                 data = {"todos": []}
+            if self.tags.get():
+                self.add_tag()
             data["todos"].append({
                 "title": self.title.get(),
                 "date_created": datetime.now().strftime("%m/%d/%Y %H:%M:%S"),
