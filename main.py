@@ -93,8 +93,9 @@ class Application(tk.Frame):
         submit_button.grid(row=10, column=0, padx=5, pady=5)
         clear_button.grid(row=10, column=1, padx=5, pady=5)
 
-    def add_tag(self, entry):
+    def add_tag(self):
         # finalize tag, clearing the field, storing the entry, and updating the trie
+        entry = self.tags.get()
         self.tags.selection_clear()
         self.tags.delete(0, tk.END)
         self.current_tags.add(entry)
@@ -106,7 +107,7 @@ class Application(tk.Frame):
         entry = self.tags.get()
         entry = entry.lower().strip()
         if x.char == "\r":
-            self.add_tag(entry)
+            self.add_tag()
             return
         # get current cursor position
         pos = self.tags.index(tk.INSERT)
