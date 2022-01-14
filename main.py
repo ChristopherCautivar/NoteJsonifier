@@ -1,8 +1,9 @@
 import json
 import tkinter as tk
-from tkcalendar import Calendar
+from tkinter import ttk, font
 from trie import Trie
 from datetime import datetime
+import calendar
 
 
 class Application(tk.Frame):
@@ -49,11 +50,30 @@ class Application(tk.Frame):
                                 validatecommand=(self.register(self.validate_num), "%P"))
         self.due_date = tk.Button(self, text="Add Due Date", command=self.replace_calendar)
         self.due_date.bind("<Return>", lambda x: self.replace_calendar())
-        self.calendar = Calendar(self, date_pattern="mm/dd/y")
+        # self.calendar_input = Calendar(self, date_pattern="mm/dd/y")
+        self.calendar_input = tk.Frame(self)
+        today = datetime.today()
+        # default to today, and trace every time year or month changes verify that day is still in 
+        # that year (leap year, month length changes) otherwise change date to the end of the month.
+        self.calendar_m = tk.StringVar(value=str(today.month))
+        self.calendar_m.trace_add("write", self.date_change)
+        self.calendar_month = tk.ttk.Combobox(self.calendar_input, textvariable=self.calendar_m,
+            width=2, values=[*range(1,13)], state="readonly")
+        self.calendar_y = tk.StringVar(value=str(today.year))
+        self.calendar_y.trace_add("write", self.date_change)
+        self.calendar_year = tk.ttk.Combobox(self.calendar_input, textvariable=self.calendar_y,
+            width=4, values=[*range(1800,today.year+1)], state="readonly")
+        self.calendar_d = tk.StringVar(value=str(today.day))
+        self.calendar_day = tk.ttk.Combobox(self.calendar_input, textvariable=self.calendar_d,
+            width=2, values=[*range(1, calendar.monthrange(int(self.calendar_y.get()), 
+            int(self.calendar_m.get()))[1]+1)], validate="all",
+            validatecommand=(self.register(self.validate_day), "%P"), state="readonly")
         self.cal_bool = False
 
         self.create_widgets()
         self.master.protocol("WM_DELETE_WINDOW", self.cleanup)
+        self.master.resizable(0, 0)
+        self.master.attributes("-topmost", 1)
 
     def create_widgets(self):
         # unstored widget label setup
@@ -82,8 +102,13 @@ class Application(tk.Frame):
         self.hours.grid(row=1, column=1)
         self.minutes.grid(row=1, column=3)
         self.due_date.grid(row=9, column=1, pady=5, padx=5)
-        self.calendar.grid(row=9, column=1, pady=5, padx=5)
-        self.calendar.grid_remove()
+        self.calendar_input.grid(row=9, column=1, pady=5, padx=5)
+        self.calendar_month.grid(row=0, column=0)
+        tk.Label(self.calendar_input, text="/").grid(row=0, column=1)
+        self.calendar_day.grid(row=0, column=2)
+        tk.Label(self.calendar_input, text="/").grid(row=0, column=3)
+        self.calendar_year.grid(row=0, column=4)
+        self.calendar_input.grid_remove()
 
         # button layouts
         submit_button = tk.Button(self, text="Submit", command=self.submit)
@@ -139,7 +164,7 @@ class Application(tk.Frame):
     def replace_calendar(self):
         # a very specific function that replaces the button to add a due date with a calendar widget
         self.due_date.grid_remove()
-        self.calendar.grid()
+        self.calendar_input.grid()
         self.cal_bool = True
 
     def validate_num(self, pval):
@@ -147,6 +172,19 @@ class Application(tk.Frame):
             return True
         else:
             return False
+    
+    def validate_day(self, pval):
+        if (str.isdigit(pval) or pval == "") and len(pval) <= 2 and pval in set(range(1,
+            calendar.monthrange(int(self.calendar_y.get()), int(self.calendar_m.get()))[1]+1)):
+            return True
+        else:
+            return False
+
+    def date_change(self, *args):
+        self.calendar_day["values"] = [*range(1, calendar.monthrange(int(self.calendar_y.get()),
+            int(self.calendar_m.get()))[1]+1)]
+        if self.calendar_d.get() not in self.calendar_day["values"]:
+            self.calendar_d.set(self.calendar_day["values"][-1])
 
     def submit(self):
         # a+ mode forces append regardless of any seek() operations. b modes allow negative indexing, but
@@ -180,7 +218,8 @@ class Application(tk.Frame):
                 "time_estimate": {"hours": int(self.hours.get() if self.hours.get() else 0),
                                   "minutes": int(self.minutes.get() if self.hours.get() else 0)},
                 # TODO: handle for calendar not being visible and converting from datetime to readable and back
-                "due_date": self.calendar.selection_get().strftime("%m/%d/%Y") if self.cal_bool else ""
+                # "due_date": self.calendar.selection_get().strftime("%m/%d/%Y") if self.cal_bool else ""
+                "due_date": f"{self.calendar_m.get()}/{self.calendar_d.get()}/{self.calendar_y.get()}" if self.cal_bool else ""
             })
             # seek to start, overwrite data
             json_file.seek(0)
@@ -199,7 +238,11 @@ class Application(tk.Frame):
         self.prerequisites.deselect()
         self.hours.delete(0, tk.END)
         self.minutes.delete(0, tk.END)
-        self.calendar.grid_remove()
+        self.calendar_input.grid_remove()
+        today = datetime.today()
+        self.calendar_m.set(today.month)
+        self.calendar_d.set(today.day)
+        self.calendar_y.set(today.year)
         self.due_date.grid()
         self.current_tags.clear()
         self.previous_tags["text"] = ""
